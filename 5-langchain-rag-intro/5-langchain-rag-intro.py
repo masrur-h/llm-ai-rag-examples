@@ -1,88 +1,78 @@
-import getpass
 import os
 
 if not os.environ.get('GOOGLE_API_KEY'):
-    os.environ['GOOGLE_API_KEY'] = getpass.getpass("Enter your Google API Key for Gemini Access: ")
+    print("Google API key not set in environment variable GOOGLE_API_KEY.")
+    exit(1)
 
-# init_chat_model init_chat_model function to easily initialize various chat models from different providers like OpenAI, Anthropic, Google, and more. This method simplifies the setup process by handling imports and configurations.
+# --- 1. LLM & Embeddings ---
+# init_chat_model simplifies initialization across providers (OpenAI, Anthropic, Google, etc.)
 from langchain.chat_models import init_chat_model
-llm = init_chat_model('gemini-2.5-flash', model_provider='google_genai')
-
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-
-from langchain_core.vectorstores import InMemoryVectorStore
-vector_store = InMemoryVectorStore(embeddings)
+llm = init_chat_model('gemini-2.5-flash-lite', model_provider='google_genai')
 
 
+# --- 2. Vector Store (ChromaDB with persistence) ---
+from langchain_chroma import Chroma
 
-import bs4
-from langchain import hub
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langgraph.graph import START, StateGraph
-from typing_extensions import List, TypedDict
+CHROMA_PATH = "./chroma_db_data"
+COLLECTION_NAME = "langchain_rag_demo"
 
-
-# Load and chunk contents of the blog
-loader = WebBaseLoader(
-    web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent/",),
-    bs_kwargs=dict(
-        parse_only=bs4.SoupStrainer(
-            class_=("post-content", "post-title", "post-header")
-        )
-    ),
+vector_store = Chroma(
+    collection_name=COLLECTION_NAME,
+    persist_directory=CHROMA_PATH
 )
-docs = loader.load()
 
+# --- 3. Load & Split Documents ---
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-all_splits = text_splitter.split_documents(docs)
-print(f"Split blog post into {len(all_splits)} sub-documents.")
+PDF_PATH = os.path.join(os.path.dirname(__file__), "../4.2-homework-started-chromadb-filter/Day4-Homework-chromadb-filter-exercises.pdf")
 
-# Do the indexing of the chunks
-vector_store.add_documents(all_splits)
+# Only index if collection is empty (avoids duplicates on re-runs)
+if vector_store._collection.count() == 0:
+    loader = PyPDFLoader(PDF_PATH)
+    docs = loader.load()
 
-# Next define the prompt by loading it from the Langchain prompt hub
-# Here is the direct link 
-# https://smith.langchain.com/hub/rlm/rag-prompt?_gl=1*1tv8aoc*_ga*Nzg2NjEzOTg3LjE3NTcwNjUyMTk.*_ga_47WX3HKKY2*czE3NTcwNjg0OTIkbzIkZzEkdDE3NTcwNjg0OTkkajUzJGwwJGgw
-prompt = hub.pull("rlm/rag-prompt")
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    chunks = splitter.split_documents(docs)
+    print(f"Split PDF into {len(chunks)} chunks.")
 
-# Define state for application
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    answer: str
+    vector_store.add_documents(chunks)
+    print(f"Indexed {len(chunks)} chunks into ChromaDB.")
+else:
+    print(f"Collection already contains {vector_store._collection.count()} chunks. Skipping indexing.")
 
+# --- 4. Build RAG Chain with LCEL (LangChain Expression Language) ---
+# LCEL uses the | operator to compose components into a pipeline.
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
-# Define application steps for the langraph
-# Each step is a function that takes the current state and returns an updated state.
-def retrieve(state: State):
-    retrieved_docs = vector_store.similarity_search(state["question"])
-    return {"context": retrieved_docs}
+retriever = vector_store.as_retriever()
 
-def generate(state: State):
-    docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-    messages = prompt.invoke({"question": state["question"], "context": docs_content})
-    response = llm.invoke(messages)
-    return {"answer": response.content}
+prompt = ChatPromptTemplate.from_template("""Answer the question using only the context below.
 
-# Compile application and test
-# Langraph provides a StateGraph builder to easily define the application flow
-# application flow is defined as a graph of states and transitions.
-# Langgraphs uses a state machine approach to manage the flow of data and operations. Thats what the class State is for.
-# Here we have a simple linear flow: START -> retrieve -> generate
-graph_builder = StateGraph(State).add_sequence([retrieve, generate])
-graph_builder.add_edge(START, "retrieve")
-graph = graph_builder.compile()
+Context:
+{context}
 
-# Now we can run the application by invoking the graph with an initial state.
-# Invoke will return the final state once the execution is complete.
-response = graph.invoke({"question": "What is Task Decomposition?"})
-print(response["answer"])
-    
-# another option is to use streaming response
-for step in graph.stream({"question": "What is Task Decomposition?"}, stream_mode="messages"):
-    print(f"Step: {step[0]}, Output: {step[1]}")
+Question: {question}""")
 
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+# Chain: retrieve context → format → fill prompt → call LLM → parse output
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+# --- 5. Run ---
+print("\n--- Invoke ---")
+response = rag_chain.invoke("What metadata fields are available in the knowledge base?")
+print(response)
+
+print("\n--- Stream ---")
+for chunk in rag_chain.stream("What is the idea of Exercise 4?"):
+    print(chunk, end="", flush=True)
+print()
