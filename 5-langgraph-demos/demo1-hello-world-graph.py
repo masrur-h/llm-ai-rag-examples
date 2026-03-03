@@ -1,6 +1,3 @@
-# first define state. The state is basically an object which is passed between th nodes
-# and edges of the graph.
-
 from typing import TypedDict, Literal
 import random
 from langgraph.graph import StateGraph, START, END
@@ -32,10 +29,6 @@ def sad_response(state: State):
 ## below decide_mood function is an example of a conditional edge which decides the 
 ## next node to visit based on the current state of the graph. In this example, we will just randomly decide to go to node2 or node3.
 def decide_mood(state) -> Literal['happy_response', 'sad_response']:
-
-    #Lets read the current state to decide on the next node
-    user_input = state["message"]
-
     if(random.random() < 0.5):
         return "happy_response"
     
