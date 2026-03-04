@@ -2,6 +2,7 @@ from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI 
 
 messages = [
+    SystemMessage(content="You are a helpful assistant who is expert telling jokes involving animals."),
     AIMessage(content="Hello, how can I assist you today?"),
     HumanMessage(content="Can you tell me a joke?"),
     AIMessage(content="Sure! Why don't scientists trust atoms? Because they make up everything!"),
