@@ -13,8 +13,8 @@ The graph:
 To simulate a real-world "late second invocation" across process restarts,
 we use SqliteSaver (file-based checkpoint) and two CLI modes:
 
-  python dmo7.1-persistence-agent.py              # First run  — steps 1-3, then suspends
-  python dmo7.1-persistence-agent.py --resume     # Second run — manager approves, steps 5-6
+  python demo8.1-purchase-agent.py              # First run  — steps 1-3, then suspends
+  python demo8.1-purchase-agent.py --resume     # Second run — manager approves, steps 5-6
 
 Between the two runs the Python process exits completely.  The full agent
 state (vendor data, pricing, chosen quote) survives on disk in SQLite.
@@ -45,14 +45,14 @@ class ProcurementState(TypedDict):
 
 # ─── LLM (used only for the notification step to make it feel "agentic") ─────
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-lite")
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
 
 
 # ─── Node functions ──────────────────────────────────────────────────────────
 
 def lookup_vendors(state: ProcurementState) -> dict:
     """Step 1: Look up approved vendors for laptops."""
-    print("\n🔍 [Step 1] Looking up approved vendors...")
+    print("\n[Step 1] Looking up approved vendors...")
     time.sleep(1)  # simulate API call
     vendors = [
         {"name": "Dell", "id": "V-001", "category": "laptops", "rating": 4.5},
@@ -60,13 +60,13 @@ def lookup_vendors(state: ProcurementState) -> dict:
         {"name": "HP", "id": "V-003", "category": "laptops", "rating": 4.1},
     ]
     for v in vendors:
-        print(f"   ✓ Found vendor: {v['name']} (rating {v['rating']})")
+        print(f"   Found vendor: {v['name']} (rating {v['rating']})")
     return {"vendors": vendors}
 
 
 def fetch_pricing(state: ProcurementState) -> dict:
     """Step 2: Fetch current pricing from all 3 suppliers."""
-    print("\n💰 [Step 2] Fetching pricing from suppliers...")
+    print("\n[Step 2] Fetching pricing from suppliers...")
     time.sleep(1.5)  # simulate multiple API calls
     quotes = [
         {"vendor": "Dell", "unit_price": 248, "total": 12_400, "delivery_days": 5},
@@ -74,17 +74,17 @@ def fetch_pricing(state: ProcurementState) -> dict:
         {"vendor": "HP", "unit_price": 259, "total": 12_950, "delivery_days": 4},
     ]
     for q in quotes:
-        print(f"   📋 {q['vendor']}: €{q['unit_price']}/unit × 50 = €{q['total']:,} "
+        print(f"   {q['vendor']}: €{q['unit_price']}/unit x 50 = €{q['total']:,} "
               f"({q['delivery_days']} day delivery)")
     return {"quotes": quotes}
 
 
 def compare_quotes(state: ProcurementState) -> dict:
     """Step 3: Compare quotes and pick the best one."""
-    print("\n📊 [Step 3] Comparing quotes...")
+    print("\n[Step 3] Comparing quotes...")
     time.sleep(0.5)
     best = min(state["quotes"], key=lambda q: q["total"])
-    print(f"   🏆 Best quote: {best['vendor']} at €{best['total']:,}")
+    print(f"   Best quote: {best['vendor']} at €{best['total']:,}")
     print(f"   (Saves €{max(q['total'] for q in state['quotes']) - best['total']:,} "
           f"vs most expensive option)")
     return {"best_quote": best}
@@ -93,7 +93,7 @@ def compare_quotes(state: ProcurementState) -> dict:
 def request_approval(state: ProcurementState) -> dict:
     """Step 4: Human-in-the-loop — request manager approval for orders > €10,000."""
     best = state["best_quote"]
-    print("\n⏸️  [Step 4] Order exceeds €10,000 — manager approval required!")
+    print("\n[Step 4] Order exceeds €10,000 — manager approval required!")
     print(f"   Sending approval request to manager...")
     amount_str = f"€{best['total']:,}"
     delivery_str = f"{best['delivery_days']} business days"
@@ -115,28 +115,28 @@ def request_approval(state: ProcurementState) -> dict:
         "amount": best["total"],
     })
 
-    print(f"\n✅ [Step 4] Manager responded: {decision}")
+    print(f"\n[Step 4] Manager responded: {decision}")
     return {"approval_status": decision}
 
 
 def submit_purchase_order(state: ProcurementState) -> dict:
     """Step 5: Submit the purchase order to the ERP system."""
     if "reject" in state["approval_status"].lower():
-        print("\n❌ [Step 5] Purchase REJECTED by manager. Aborting.")
+        print("\n[Step 5] Purchase REJECTED by manager. Aborting.")
         return {"po_number": "REJECTED"}
 
-    print("\n📦 [Step 5] Submitting purchase order to ERP system...")
+    print("\n[Step 5] Submitting purchase order to ERP system...")
     time.sleep(1)
     po_number = "PO-2026-00342"
-    print(f"   ✓ Purchase order created: {po_number}")
-    print(f"   ✓ Vendor: {state['best_quote']['vendor']}")
-    print(f"   ✓ Amount: €{state['best_quote']['total']:,}")
+    print(f"   Purchase order created: {po_number}")
+    print(f"   Vendor: {state['best_quote']['vendor']}")
+    print(f"   Amount: €{state['best_quote']['total']:,}")
     return {"po_number": po_number}
 
 
 def notify_employee(state: ProcurementState) -> dict:
     """Step 6: Use LLM to draft and send a notification to the employee."""
-    print("\n📧 [Step 6] Notifying employee...")
+    print("\n[Step 6] Notifying employee...")
 
     if state["po_number"] == "REJECTED":
         prompt = (
@@ -155,7 +155,7 @@ def notify_employee(state: ProcurementState) -> dict:
 
     response = llm.invoke(prompt)
     notification = response.content
-    print(f"   📨 Employee notification sent:")
+    print(f"   Employee notification sent:")
     print(f"   \"{notification}\"")
     return {"notification": notification}
 
@@ -198,7 +198,7 @@ def run_first_invocation(graph):
     print("=" * 60)
     print("  FIRST INVOCATION — Employee submits purchase request")
     print("=" * 60)
-    print("\n📝 Employee request: \"Order 50 laptops for the new engineering team\"")
+    print("\nEmployee request: \"Order 50 laptops for the new engineering team\"")
 
     result = graph.invoke(
         {"request": "Order 50 laptops for the new engineering team"},
@@ -207,7 +207,7 @@ def run_first_invocation(graph):
 
     # After interrupt, the graph returns with __interrupt__ info
     print("\n" + "=" * 60)
-    print("  💤 AGENT SUSPENDED — waiting for manager approval")
+    print("AGENT SUSPENDED — waiting for manager approval")
     print("=" * 60)
     print("\n  The agent process can now exit completely.")
     print("  All state (vendors, pricing, best quote) is frozen in SQLite.")
@@ -228,10 +228,10 @@ def run_second_invocation(graph):
     # Show that the state survived the process restart
     saved_state = graph.get_state(config)
     if not saved_state or not saved_state.values:
-        print("\n❌ No saved state found! Run without --resume first.")
+        print("\nNo saved state found! Run without --resume first.")
         return
 
-    print("\n  📂 Loading state from checkpoint...")
+    print("\nLoading state from checkpoint...")
     print(f"  ✓ Request: {saved_state.values.get('request', 'N/A')}")
     print(f"  ✓ Vendors found: {len(saved_state.values.get('vendors', []))}")
     print(f"  ✓ Quotes received: {len(saved_state.values.get('quotes', []))}")
@@ -240,7 +240,7 @@ def run_second_invocation(graph):
     print(f"\n  Steps 1-3 are NOT re-executed — their output is in the checkpoint!\n")
 
     # Resume with the manager's approval
-    print("  👔 Manager clicks [APPROVE] ...")
+    print("Manager clicks [APPROVE] ...")
     time.sleep(1)
 
     result = graph.invoke(
@@ -249,7 +249,7 @@ def run_second_invocation(graph):
     )
 
     print("\n" + "=" * 60)
-    print("  ✅ PROCUREMENT COMPLETE")
+    print("PROCUREMENT COMPLETE")
     print("=" * 60)
     print(f"\n  PO Number:    {result.get('po_number', 'N/A')}")
     print(f"  Vendor:       {result.get('best_quote', {}).get('vendor', 'N/A')}")
