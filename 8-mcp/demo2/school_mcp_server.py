@@ -3,7 +3,7 @@
 # Exposes a SQLite school database to any MCP client
 #
 # Setup:     python create_school_db.py    (creates school.db)
-# Inspector: fastmcp dev school_mcp_server.py
+# Inspector: fastmcp dev inspector school_mcp_server.py
 # Stdio:     python school_mcp_server.py
 #
 # Claude Code config (~/.claude/mcp.json):
@@ -19,9 +19,11 @@
 import sqlite3
 import json
 from fastmcp import FastMCP
+import os
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "school.db")
 mcp = FastMCP("School Records")
-DB_PATH = "school.db"
+
 
 
 def get_db():

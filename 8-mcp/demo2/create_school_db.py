@@ -110,6 +110,20 @@ grades_data = [
     (20, 5, 5, 4, 87.0, "Very good, creative database design"),
     (21, 7, 5, 2, 55.0, "Barely passed, needs significant improvement"),
     (22, 10, 5, 5, 94.0, "Excellent in all areas"),
+    # Spring 2025 - Database Systems (course 2) - additional students, 60% fail rate
+    (23, 3, 2, 0, 22.0, "Did not complete final exam"),
+    (24, 5, 2, 0, 18.0, "Missing assignments and poor exam results"),
+    (25, 7, 2, 0, 15.0, "Did not submit project work"),
+    (26, 8, 2, 4, 83.0, "Good understanding of relational models"),
+    (27, 9, 2, 0, 25.0, "Struggled with SQL queries, did not pass"),
+    (28, 10, 2, 3, 69.0, "Adequate performance, room for improvement"),
+    # Spring 2025 - Web Development (course 3) - additional students, 60% fail rate
+    (29, 1, 3, 0, 20.0, "Did not complete the project"),
+    (30, 3, 3, 0, 12.0, "Absent from most sessions, no submissions"),
+    (31, 5, 3, 0, 28.0, "Failed to meet minimum requirements"),
+    (32, 6, 3, 4, 82.0, "Good responsive design skills"),
+    (33, 7, 3, 0, 19.0, "Incomplete coursework"),
+    (34, 10, 3, 3, 67.0, "Basic competency demonstrated"),
 ]
 
 # Attendance for Spring 2025 AI course (course 1)
