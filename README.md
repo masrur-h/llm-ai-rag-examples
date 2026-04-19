@@ -1,3 +1,13 @@
+py -3.11 -m venv venv311
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+$env:GOOGLE_API_KEY="AIzaSyB-5Xw8qa8gKoErmgTKBC4sHUIIkWYZa-4"
+
+uvicorn main:app
+npm install
+npm run dev
+
+
 # RAG Demos for LLMs
 
 A collection of progressively more advanced demos exploring **Retrieval-Augmented Generation (RAG)** concepts for Large Language Models. Each demo lives in its own folder with its own README and `requirements.txt`.
