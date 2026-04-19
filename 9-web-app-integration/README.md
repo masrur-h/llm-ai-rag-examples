@@ -22,3 +22,8 @@ The React frontend collects the user's text and selected tone. It sends a POST r
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
+3. Run uvicorn main:app
+
+### Frontend
+1. Run npm install
+2. Run npm run dev
