@@ -33,3 +33,14 @@ The React frontend collects the user's text and selected tone. It sends a POST r
 2. Run: 
    ```bash
    npm run dev
+
+## What are the limitations?
+
+- It only handles single-turn rewriting.
+- It depends on the internet and an external API.
+- The output may vary slightly.
+- It has no authentication, database or production-level deployment features
+
+## AI tools used
+
+Chatgpt has been used for styling and CSS tweaks.
