@@ -37,9 +37,10 @@ The React frontend collects the user's text and selected tone. It sends a POST r
 ## What are the limitations?
 
 - It only handles single-turn rewriting.
+- It does not have any memory.
 - It depends on the internet and an external API.
 - The output may vary slightly.
-- It has no authentication, database or production-level deployment features
+- It has no authentication, database or production-level deployment features.
 
 ## AI tools used
 
